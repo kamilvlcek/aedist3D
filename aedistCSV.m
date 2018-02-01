@@ -33,6 +33,7 @@ end
 obrazkyRT_2D = array2table(zeros(numel(filenames),numel(obrazky)));
 obrazkyRT_2D.Properties.VariableNames = obrazky;
 obrazkyRT_3D = obrazkyRT_2D; %dve stejne prazdne tabulky na zacatku
+obrazkyIC = obrazkyRT_2D; %is correct - uspesnost u obrazku
 RowNames = cell(numel(filenames),1);
 
 for f = 1:numel(filenames)
@@ -49,6 +50,7 @@ for f = 1:numel(filenames)
             if p==3 %allo blok
                 names = Sdata.Name(Podle{p} & d2D3D{d}); %jmena obrazku
                 rt =  Sdata.RTms(Podle{p} & d2D3D{d}); %reakcni casy
+                ic =  Sdata.IsCorrect(Podle{p} & d2D3D{d}); %uspesnost
                 for n = 1:numel(names)
                     if any(strcmp(names{n},fieldnames(obrazkyRT_2D))) %existuje tohle jmeno obrazku v tabulce?
                         if d == 1
@@ -56,6 +58,7 @@ for f = 1:numel(filenames)
                         else
                             obrazkyRT_3D.(names{n})(f)= rt(n);      
                         end
+                        obrazkyIC.(names{n})(f)= ic(n);       
                     else
                         disp(['nezname jmeno obrazku ' names{n}]);
                     end
@@ -91,6 +94,9 @@ M3err = sem(obrazkyRT_3D{:,:},1); %prumer sloupcu - pres subjekty
 %[M3,M3i]=sort(M3,'descend');
 %obrazkyRT_3D = obrazkyRT_3D(:,M3i); %seradim sloupce v tabulce podle prumeru pres subjekty
 
+IC = mean(obrazkyIC{:,:}); %prumer sloupcu - pres subjekty
+ICerr = sem(obrazkyIC{:,:},1);
+
 %obrazek prumeru Allo
 figure('name','allo times means')
 plot(M2,'b');
@@ -106,11 +112,14 @@ for o = 1:numel(obrazky) % nazvy vsech obrazku
         th.Rotation = 90;
     end
 end
-
 for b = 1:numel(blokyallozac) %svisle cary oznacujici zacatku bloku
     line( [blokyallozac(b) blokyallozac(b)],[0 3000],'Color',[0.5 0.5 0.5]);
 end
 
+yyaxis right;
+plot(IC,'g'); %uspesnost prumerna
+errorbar(IC,ICerr,'color',[0.5 0.5 0.5]);
+ylim([-1 1.2]);
 %doplnim jmena radku
 obrazkyRT_2D.Properties.RowNames = RowNames;
 obrazkyRT_3D.Properties.RowNames = RowNames;
