@@ -1,8 +1,9 @@
-function [ obrazkyRT_2D,obrazkyRT_3D,Poradi ] = aedistCSV( filenames )
+function [ obrazkyRT_2D,obrazkyRT_3D,obrazkyIC_2D,obrazkyIC_3D,Errors,Poradi ] = aedistCSV( filenames )
 %UNTITLED4 Summary of this function goes here
 %   Detailed explanation goes here
 close all;
 
+%TODO -  vracet uspesnost
 Poradi = import2D3Dporadi('AEDist2D3D poradi.csv'); %soubor se vzorovym poradim podminek
 iTrening = Poradi.zpetnavazba == 1; %indexy treningovych pokusu
 Poradi(iTrening,:) = []; % i tady potrebuju smazat treningove pokusy
@@ -30,11 +31,13 @@ obrazky = Poradi.obrazek(iAllo);
 for o = 1:numel(obrazky)
     obrazky{o} = basename(obrazky{o}); %potrebuju odstranit pripony souboru .png
 end
-obrazkyRT_2D = array2table(zeros(numel(filenames),numel(obrazky)));
+obrazkyRT_2D = array2table(nan(numel(filenames),numel(obrazky)));
 obrazkyRT_2D.Properties.VariableNames = obrazky;
 obrazkyRT_3D = obrazkyRT_2D; %dve stejne prazdne tabulky na zacatku
-obrazkyIC = obrazkyRT_2D; %is correct - uspesnost u obrazku
+obrazkyIC_2D = obrazkyRT_2D; %is correct - uspesnost u obrazku 2D
+obrazkyIC_3D = obrazkyRT_2D; %is correct - uspesnost u obrazku 3D
 RowNames = cell(numel(filenames),1);
+Errors = cell2table(cell(0,7), 'VariableNames', {'Subject','Condition', 'Dimension','Obrazek','Response','Missed','IsCorrect'}); %prazdna tabulka
 
 for f = 1:numel(filenames)
     filename = filenames{f};
@@ -47,22 +50,34 @@ for f = 1:numel(filenames)
         for d= 1:size(DataBloky,2) %cyklus 2D vs 3D
             DataBloky(p,d,:) = Sdata.RTms(Podle{p} & d2D3D{d});
             %DataBloky(p,d,:) = Sdata.IsCorrect(Podle{p} & d2D3D{d});
-            if p==3 %allo blok
+            if p==3 %allo blok                
                 names = Sdata.Name(Podle{p} & d2D3D{d}); %jmena obrazku
                 rt =  Sdata.RTms(Podle{p} & d2D3D{d}); %reakcni casy
                 ic =  Sdata.IsCorrect(Podle{p} & d2D3D{d}); %uspesnost
+                
                 for n = 1:numel(names)
                     if any(strcmp(names{n},fieldnames(obrazkyRT_2D))) %existuje tohle jmeno obrazku v tabulce?
                         if d == 1
-                            obrazkyRT_2D.(names{n})(f)= rt(n);                                      
+                            obrazkyRT_2D.(names{n})(f)= rt(n);  
+                            obrazkyIC_2D.(names{n})(f)= ic(n);  
                         else
-                            obrazkyRT_3D.(names{n})(f)= rt(n);      
+                            obrazkyRT_3D.(names{n})(f)= rt(n);  
+                            obrazkyIC_3D.(names{n})(f)= ic(n);  
                         end
-                        obrazkyIC.(names{n})(f)= ic(n);       
+                             
                     else
                         disp(['nezname jmeno obrazku ' names{n}]);
                     end
                 end
+            end
+            %jeste ulozim zaznamy o chybach
+            SdataExt = Sdata(Podle{p} & d2D3D{d},:); %vyber tabulky Sdata
+            PoradiExt = Poradi(Podle{p} & d2D3D{d},:); %vyber tabulky s conditions
+            chyby = find(SdataExt.IsCorrect==0);                
+            for ir = chyby' %cyklus pro kazdou chybu
+                %ir = chyby(row);
+                ERR = {fname,PoradiExt.podle(ir),PoradiExt.d2D3D(ir),SdataExt.Name(ir),SdataExt.Response(ir),SdataExt.Missed(ir),SdataExt.IsCorrect(ir)};
+                Errors = [Errors ; ERR]; %#ok<AGROW>
             end
         end        
     end
@@ -76,34 +91,38 @@ for f = 1:numel(filenames)
 end
 
 %obrazek Allo - jednotlivci
-figure('name','allo times')
-subplot(1,2,1)
-plot(obrazkyRT_2D{:,:}');
-title('2D');
-subplot(1,2,2)
-plot(obrazkyRT_3D{:,:}');
-title('3D');
+% figure('name','allo times')
+% subplot(1,2,1)
+% plot(obrazkyRT_2D{:,:}');
+% title('2D');
+% subplot(1,2,2)
+% plot(obrazkyRT_3D{:,:}');
+% title('3D');
 
-M2 = mean(obrazkyRT_2D{:,:}); %prumer sloupcu - pres subjekty
+M2 = mean(obrazkyRT_2D{:,:},1); %prumer sloupcu - pres subjekty
 M2err = sem(obrazkyRT_2D{:,:},1);
 %[M2,M2i]=sort(M2,'descend');
 %obrazkyRT_2D = obrazkyRT_2D(:,M2i); %seradim sloupce v tabulce podle prumeru pres subjekty
 
-M3 = mean(obrazkyRT_3D{:,:}); %prumer sloupcu - pres subjekty
+M3 = mean(obrazkyRT_3D{:,:},1); %prumer sloupcu - pres subjekty
 M3err = sem(obrazkyRT_3D{:,:},1); %prumer sloupcu - pres subjekty
 %[M3,M3i]=sort(M3,'descend');
 %obrazkyRT_3D = obrazkyRT_3D(:,M3i); %seradim sloupce v tabulce podle prumeru pres subjekty
 
-IC = mean(obrazkyIC{:,:}); %prumer sloupcu - pres subjekty
-ICerr = sem(obrazkyIC{:,:},1);
+IC_2D = mean(obrazkyIC_2D{:,:},1); %prumer sloupcu - pres subjekty
+ICerr_2D = sem(obrazkyIC_2D{:,:},1);
+IC_3D = mean(obrazkyIC_3D{:,:},1); %prumer sloupcu - pres subjekty
+ICerr_3D = sem(obrazkyIC_3D{:,:},1);
+% IC = nanmean(cat(1,IC_2D,IC_3D),1); %prumer pro 2D i 3D obrazky
+% ICerr = nanmean(cat(1,ICerr_2D,ICerr_3D),1);
 
 %obrazek prumeru Allo
 figure('name','allo times means')
-plot(M2,'b');
+plot(M2,'color',[0 0 1]); %modra = 2D
 hold on;
-errorbar(M2,M2err);
-plot(M3,'r');
-errorbar(M3,M3err);
+errorbar(M2,M2err,'color',[0 0 1]);
+plot(M3,'color',[1 0 0]); %cervena = 3D
+errorbar(M3,M3err,'color',[1 0 0]);
 legend('2D','2D','3D','3D');
 ylimit = 100; %max(M2);
 for o = 1:numel(obrazky) % nazvy vsech obrazku
@@ -112,18 +131,32 @@ for o = 1:numel(obrazky) % nazvy vsech obrazku
         th.Rotation = 90;
     end
 end
+for col = 1:size(M2,2) %pro kazdy obrazek
+    line( [col col],[0 3000],'LineStyle',':','Color',[0.1 0.1 0.1]); %tenoucka cara pro lepsi lokalizaci obrazku
+end
 for b = 1:numel(blokyallozac) %svisle cary oznacujici zacatku bloku
     line( [blokyallozac(b) blokyallozac(b)],[0 3000],'Color',[0.5 0.5 0.5]);
 end
 
 yyaxis right;
-plot(IC,'g'); %uspesnost prumerna
-errorbar(IC,ICerr,'color',[0.5 0.5 0.5]);
+plot(IC_2D,'-','color',[0 0 0.5]); %uspesnost prumerna - cara
 ylim([-1 1.2]);
+errorbar(IC_2D,ICerr_2D,'o','color',[0 0 0.5]); %modra = 2D - krouzky
+plot(IC_3D,'-','color',[0.5 0 0]); %uspesnost prumerna
+errorbar(IC_3D,ICerr_3D,'o','color',[0.5 0 0]); %modra = 2D
+
 %doplnim jmena radku
 obrazkyRT_2D.Properties.RowNames = RowNames;
 obrazkyRT_3D.Properties.RowNames = RowNames;
+obrazkyIC_2D.Properties.RowNames = RowNames;
+obrazkyIC_3D.Properties.RowNames = RowNames;
 
+%zapisu vystupni tabulky do excelu
+writetable(obrazkyRT_2D,'obrazkyRT_2D.xls','WriteRowNames',true);
+writetable(obrazkyRT_3D,'obrazkyRT_3D.xls','WriteRowNames',true);
+writetable(obrazkyIC_2D,'obrazkyIC_2D.xls','WriteRowNames',true);
+writetable(obrazkyIC_3D,'obrazkyIC_3D.xls','WriteRowNames',true);
+writetable(Errors,'Errors.xls','WriteRowNames',true);
 end
 
 function y = sem(x,dim)
