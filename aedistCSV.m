@@ -3,8 +3,8 @@ function [ obrazkyRT_2D,obrazkyRT_3D,obrazkyIC_2D,obrazkyIC_3D,Errors,Poradi ] =
 %   Detailed explanation goes here
 close all;
 
-%TODO -  vracet uspesnost
-Poradi = import2D3Dporadi('AEDist2D3D poradi.csv'); %soubor se vzorovym poradim podminek
+%TODO -  pouziti ruznych konfiguracnich souboru pro ruzne lidi - mozna je to zbytecne?
+Poradi = import2D3Dporadi('AEDist2D3D inverze poradi.csv'); %soubor se vzorovym poradim podminek %'AEDist2D3D poradi.csv'
 iTrening = Poradi.zpetnavazba == 1; %indexy treningovych pokusu
 Poradi(iTrening,:) = []; % i tady potrebuju smazat treningove pokusy
 %bloky podle otazky
@@ -19,12 +19,7 @@ d2D3D{1} = Poradi.d2D3D == 2;
 d2D3D{2} = Poradi.d2D3D == 3; 
 
 %bloky Allo podminek
-iAllo = contains(Poradi.podle(:),'znacka'); %indexy radku z Allo
-blokyzacatky = iAllo == 1 & [0 ; diff(iAllo)]==1; %kde zacinaji allo bloky
-jAllo = double(iAllo); %potrebuju zjistit bloky zacatku allo, jen v ramci allo 
-jAllo(blokyzacatky)=2; %zacatky bloku allo si takhle oznacim
-jAllo(jAllo==0) = []; %zbylo mi jen allo 
-blokyallozac = find(jAllo==2); %tohle jsou relativni indexy zacatku bloku allo 
+[blokyallozac,iAllo] = zacatkyBloku(Poradi);
 
 %zakladam tabulku, obrazky jako nazvy sloupcu
 obrazky = Poradi.obrazek(iAllo);
@@ -167,4 +162,14 @@ end
 function n= basename(filename)
     [~,n,~] = fileparts(filename);
 end
+
+function [blokyallozac,iAllo] = zacatkyBloku(Poradi)
+    iAllo = contains(Poradi.podle(:),'znacka'); %indexy radku z Allo
+    blokyzacatky = iAllo == 1 & [0 ; diff(iAllo)]==1; %kde zacinaji allo bloky
+    jAllo = double(iAllo); %potrebuju zjistit bloky zacatku allo, jen v ramci allo 
+    jAllo(blokyzacatky)=2; %zacatky bloku allo si takhle oznacim
+    jAllo(jAllo==0) = []; %zbylo mi jen allo 
+    blokyallozac = find(jAllo==2); %tohle jsou relativni indexy zacatku bloku allo 
+end
+
 
