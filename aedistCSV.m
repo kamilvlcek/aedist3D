@@ -1,8 +1,10 @@
-function [ obrazkyRT_2D,obrazkyRT_3D,obrazkyIC_2D,obrazkyIC_3D,Errors,Poradi ] = aedistCSV( filenames,datafolder )
+function [ obrazkyRT_2D,obrazkyRT_3D,obrazkyIC_2D,obrazkyIC_3D,Errors,Poradi ] = aedistCSV( filenames,datafolder,podleceho )
 %UNTITLED4 Summary of this function goes here
 %   Detailed explanation goes here
 close all;
 if ~exist('datafolder','var'), datafolder = [pwd '\']; end %muzu mit soubory bez cesty a uvest ji v novem parametru
+if ~exist('podleceho','var'), podleceho = 3; end %defaultne vyhodnocuju allo
+
 csvfilelast = ''; %na zacatku je prazdne
 %19.4.2018 -  pouziti ruznych konfiguracnich souboru pro ruzne lidi - lepsi kdyz jsou serazene podle csv file, pak se kazdy csv nacita jen jednou
 for f = 1:size(filenames,1)
@@ -22,6 +24,13 @@ for f = 1:size(filenames,1)
         Podle{1} = contains(Poradi.podle,'cervena');
         Podle{2} = contains(Poradi.podle,'vy');
         Podle{3} = contains(Poradi.podle,'znacka');
+        if podleceho == 3
+            podlecehoname = 'Allo';
+        elseif podleceho == 2
+            podlecehoname = 'Ego';
+        else
+            podlecehoname = 'Control';
+        end
 
         d2D3D = cell(2,1);
         %bloky podle 2D3D pohledu
@@ -59,7 +68,7 @@ for f = 1:size(filenames,1)
         for d= 1:size(DataBloky,2) %cyklus 2D vs 3D
             DataBloky(p,d,:) = Sdata.RTms(Podle{p} & d2D3D{d});
             %DataBloky(p,d,:) = Sdata.IsCorrect(Podle{p} & d2D3D{d});
-            if p==3 %allo blok                
+            if p==podleceho %allo blok                
                 names = Sdata.Name(Podle{p} & d2D3D{d}); %jmena obrazku
                 rt =  Sdata.RTms(Podle{p} & d2D3D{d}); %reakcni casy
                 ic =  Sdata.IsCorrect(Podle{p} & d2D3D{d}); %uspesnost
@@ -91,20 +100,20 @@ for f = 1:size(filenames,1)
         end        
     end
     
-    if filenames{f,3} > 0 %pokud se ma zobrazi obrazek
-        prumery = mean(DataBloky,3);
-        stderr = sem(DataBloky,3);
-        fh = figure('name',[ basename(filename) 'prumery']);
-        set(fh, 'Visible', 'off');
-        bar(prumery);
-        hold on;
-        errorbar(prumery,stderr);
-        legend({'2D','3D'},'Location','northwest');  
-        title(strrep(basename(filename),'_','\_'));
-        xticklabels({'cervena','vy','znacka'})
-        saveas(gcf,[ datafolder basename(filename) '.png'])
-        close(fh);
-    end
+    %obrazek pro kazdeho cloveka zvlast
+    prumery = mean(DataBloky,3);
+    stderr = sem(DataBloky,3);
+    fh = figure('name',[ basename(filename) 'prumery']);
+    set(fh, 'Visible', 'off');
+    bar(prumery);
+    hold on;
+    errorbar(prumery,stderr);
+    legend({'2D','3D'},'Location','northwest');  
+    title(strrep(basename(filename),'_','\_'));
+    xticklabels({'cervena','vy','znacka'})
+    saveas(gcf,[ datafolder basename(filename) '.png'])
+    close(fh);
+    
 end
 fprintf('\n'); %dalsi radka
 %obrazek Allo - jednotlivci
@@ -169,11 +178,11 @@ obrazkyIC_2D.Properties.RowNames = RowNames;
 obrazkyIC_3D.Properties.RowNames = RowNames;
 
 %zapisu vystupni tabulky do excelu
-writetable(obrazkyRT_2D,[datafolder 'obrazkyRT_2D.xls'],'WriteRowNames',true);
-writetable(obrazkyRT_3D,[datafolder 'obrazkyRT_3D.xls'],'WriteRowNames',true);
-writetable(obrazkyIC_2D,[datafolder 'obrazkyIC_2D.xls'],'WriteRowNames',true);
-writetable(obrazkyIC_3D,[datafolder 'obrazkyIC_3D.xls'],'WriteRowNames',true);
-writetable(Errors,[datafolder 'Errors.xls'],'WriteRowNames',true);
+writetable(obrazkyRT_2D,[datafolder 'obrazkyRT_2D_' podlecehoname '.xls'],'WriteRowNames',true);
+writetable(obrazkyRT_3D,[datafolder 'obrazkyRT_3D_' podlecehoname '.xls'],'WriteRowNames',true);
+writetable(obrazkyIC_2D,[datafolder 'obrazkyIC_2D_' podlecehoname '.xls'],'WriteRowNames',true);
+writetable(obrazkyIC_3D,[datafolder 'obrazkyIC_3D_' podlecehoname '.xls'],'WriteRowNames',true);
+writetable(Errors,[datafolder 'Errors_' podlecehoname '.xls'],'WriteRowNames',true);
 end
 
 function y = sem(x,dim)
