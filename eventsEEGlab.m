@@ -13,15 +13,19 @@ latencyResp = [EEG.event(iresp).latency];
 rt =  (latencyResp - latency10(1:numel(latencyResp)))'/EEG.srate ;
 iti = diff(latency10)'/ EEG.srate;
 figure('name','latency');
-plot(iti/2,'.-'); %casy z CSV jsou kratsi, mozna nesedi srate a je 4kHz?
+%ITI
+plot(iti,'.-'); %casy z EEG modre
 hold on;
-plot(rt/2,'.-r'); %casy z CSV jsou kratsi, mozna nesedi srate a je 4kHz?
+itiCSV = diff(rtCSV(:,2)); %rtCSV ziskam kopii dat z CSV z excelu - druhy sloupec je ResponseOnsetClock
+plot(itiCSV,'.-'); %casy z CSV ResponseOnsetClock - hnede
+
+plot(rt,'.-r'); %RT z EEG - cervene 
 if exist('rtCSV','var')
-    plot(rtCSV/1000,'.-g');
+    plot(rtCSV(:,1)/1000,'.-g'); %RT z CSV - zelene
 end
-ylim([0 3]);
+ylim([0 6]);
 disp(num2str(median(iti)));
 disp(num2str(median(rt)));
 
-rtdiff = rtCSV/1000 - rt/2; %rtCSV ziskam kopii dat z CSV z excelu
+rtdiff = rt - rtCSV(:,1)/1000; %rtCSV ziskam kopii dat z CSV z excelu
 figure,plot(rtdiff);
