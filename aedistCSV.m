@@ -38,20 +38,24 @@ for f = 1:size(filenames,1)
         d2D3D{2} = Poradi.d2D3D == 3; 
 
         %bloky Allo podminek
-        [blokyallozac,iAllo] = zacatkyBloku(Poradi);
+        [blokyallozac,iAllo,i3D] = zacatkyBloku(Poradi);
 
         %zakladam tabulku, obrazky jako nazvy sloupcu
-        obrazky = Poradi.obrazek(iAllo);
-        for o = 1:numel(obrazky)
-            obrazky{o} = basename(obrazky{o}); %potrebuju odstranit pripony souboru .png
+        obrazky_3D = Poradi.obrazek(iAllo & i3D);
+        obrazky_2D = Poradi.obrazek(iAllo & ~i3D);
+        for o = 1:numel(obrazky_3D)
+            obrazky_3D{o} = basename(obrazky_3D{o}); %potrebuju odstranit pripony souboru .png
+            obrazky_2D{o} = basename(obrazky_2D{o}); %potrebuju odstranit pripony souboru .png
         end
     end
     if f == 1 %pokud se jedna o prvni cyklus 
-        obrazkyRT_2D = array2table(nan(size(filenames,1),numel(obrazky)));
-        obrazkyRT_2D.Properties.VariableNames = obrazky;
-        obrazkyRT_3D = obrazkyRT_2D; %dve stejne prazdne tabulky na zacatku
+        obrazkyRT_2D = array2table(nan(size(filenames,1),numel(obrazky_2D)));
+        obrazkyRT_2D.Properties.VariableNames = obrazky_2D;
         obrazkyIC_2D = obrazkyRT_2D; %is correct - uspesnost u obrazku 2D
-        obrazkyIC_3D = obrazkyRT_2D; %is correct - uspesnost u obrazku 3D
+        
+        obrazkyRT_3D = array2table(nan(size(filenames,1),numel(obrazky_3D)));
+        obrazkyRT_3D.Properties.VariableNames = obrazky_3D;     
+        obrazkyIC_3D = obrazkyRT_3D; %is correct - uspesnost u obrazku 3D
         RowNames = cell(size(filenames,1),1);
         Errors = cell2table(cell(0,7), 'VariableNames', {'Subject','Condition', 'Dimension','Obrazek','Response','Missed','IsCorrect'}); %prazdna tabulka
     end
@@ -151,9 +155,9 @@ plot(M3,'color',[1 0 0]); %cervena = 3D
 errorbar(M3,M3err,'color',[1 0 0]);
 legend('2D','2D','3D','3D');
 ylimit = 100; %max(M2);
-for o = 1:numel(obrazky) % nazvy vsech obrazku
+for o = 1:numel(obrazky_3D) % nazvy vsech obrazku
     if M2(o)>ylimit || M3(o)>ylimit
-        th = text(o,300,obrazky{o});
+        th = text(o,300,obrazky_3D{o});
         th.Rotation = 90;
     end
 end
@@ -193,13 +197,6 @@ function n= basename(filename)
     [~,n,~] = fileparts(filename);
 end
 
-function [blokyallozac,iAllo] = zacatkyBloku(Poradi)
-    iAllo = contains(Poradi.podle(:),'znacka'); %indexy radku z Allo
-    blokyzacatky = iAllo == 1 & [0 ; diff(iAllo)]==1; %kde zacinaji allo bloky
-    jAllo = double(iAllo); %potrebuju zjistit bloky zacatku allo, jen v ramci allo 
-    jAllo(blokyzacatky)=2; %zacatky bloku allo si takhle oznacim
-    jAllo(jAllo==0) = []; %zbylo mi jen allo 
-    blokyallozac = find(jAllo==2); %tohle jsou relativni indexy zacatku bloku allo 
-end
+
 
 
