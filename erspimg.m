@@ -9,7 +9,7 @@ ERPTODO = 0;
 
 %STUDY = pop_statparams(STUDY, 'condstats','on','mode','fieldtrip','fieldtripmethod','montecarlo','fieldtripmcorrect','cluster');
 STUDY = pop_statparams(STUDY, 'mode','eeglab','mcorrect','fdr','alpha',0.05); %parametricka statistika s FDR korekci, exact p < 0.05
-STUDY = pop_erspparams(STUDY, 'freqrange',[1 120] ); %parametry pro ERSP
+STUDY = pop_erspparams(STUDY, 'freqrange',[1 120],'timerange',[-1000 2000] ); %parametry pro ERSP
 STUDY = pop_erpparams(STUDY, 'plotconditions','together','topotime',[]); %parametry pro ERP
 
 channels = {STUDY.changrp.channels};
@@ -48,8 +48,10 @@ for cond = 1:numel(conditions)
         filename = [STUDY.filepath '\\figures_export_emf\\' STUDY.name '_' fname '_' cell2str(conditions{cond},1) '_' channelname];
         print(fig,filename,'-dmeta');
         close(fig); %zavre aktualni obrazek
-                       
-        erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions{cond},channels{ch}{1}); 
+        
+        if ~ERPTODO %jen pro ersp
+            erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions{cond},channelname); 
+        end
     end
 
 end
