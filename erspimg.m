@@ -26,7 +26,7 @@ for cond = 1:numel(conditions)
     for ch = 1:numel(channels)   
         disp([' +++++  CHANNEL ' channels{ch}{1} ' +++++' ]);
         if ERPTODO
-            STUDY = std_erpplot(STUDY,ALLEEG,'channels',channels{ch});  %ERP plot
+            [STUDY erpdata erptimes pgroup pcond pinter] = std_erpplot(STUDY,ALLEEG,'channels',channels{ch}); %#ok<NCOMMA> %ERP plot
         else
             [STUDY erspdata ersptimes erspfreqs pgroup pcond pinter] = std_erspplot(STUDY,ALLEEG,'channels',channels{ch}); %#ok<NCOMMA> % ERSP plot
             %erspdata - 3x1 cell, matrix 83x106x1x21  freq x time x ch x subjects

@@ -4,8 +4,8 @@ function erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions,channel)
 %erspdata - 3x1 cell, matrix 83x106x1x21  freq x time x ch x subjects
 
 freqs = {'alfa',[8 13],2; 'beta', [14 30],3; 'theta', [4 7.5],5; 'lowgamma', [31 50],8;'highgamma',[51 100],9}; % nazvy a pasma frekvenci, + cislo subplotu        
-fh = figure('Name','Pasma grafy');
-set(fh, 'Position',  [1 1 1200 600]); % velikost obrazku je z nejakeho duvodu relativni vzhledem k monitoru
+fh = figure('Name','Pasma grafy','units','normalized','outerposition',[0 0 1 1]); %maximalizovany obrazek na cely monitor
+%set(fh, 'Position',  [1 1 1200 600]); % velikost obrazku je z nejakeho duvodu relativni vzhledem k monitoru
 hue = 0.8;
 colorskat = {[0 0 0],[0 1 0],[1 0 0],[0 0 1]; [hue hue hue],[hue 1 hue],[1 hue hue],[hue hue 1]}; % prvni radka - prumery, druha radka errorbars = svetlejsi
 fprintf('Pasma ');  
@@ -40,12 +40,11 @@ for ff = 1:size(freqs,1)
         M = mean(erspmean(:,:,cond),2); %prumer pres subjekty 
         E = std(erspmean(:,:,cond),[],2)/sqrt(size(erspmean,2)); %std err of mean / std(subjects)/pocet(subjects)
         %plot(ersptimes,M);    
-        plotband(ersptimes, M, E,colorkatk(2,:)); %nejlepsi, je pruhledny, ale nejde kopirovat do corelu
-        %ciplot(M+E, M-E, T, colorkatk(2,:)); %funguje dobre pri kopii do corelu, ulozim handle na barevny pas
+        plotband(ersptimes, M, E,colorkatk(2,:)); %nejlepsi, je pruhledny, ale nejde kopirovat do corelu - lepsi pro jpg obrazky       
+        %ciplot(M+E, M-E, ersptimes, colorkatk(2,:)); %funguje dobre pri kopii do corelu, ulozim handle na barevny pas
         hold on;
         plotsh(cond) = plot(ersptimes,M,'-','LineWidth',2,'Color',colorkatk(1,:));  %prumerna odpoved,  ulozim si handle na krivku      
-    end
-    legend(plotsh,conditions); %nazvy podminek
+    end    
     yyaxis right
     plot(ersptimes,pp,'-'); %cara signifikance
     hold on;
@@ -54,6 +53,7 @@ for ff = 1:size(freqs,1)
     yticks(0:0.1:1)
     title(freqs{ff,1}); % nazev frekvencniho pasma
 end
+legend(plotsh,conditions,'Location','best'); %nazvy podminek - jen pro posledni graf. Chtel jsem dat do prazneho subplotu, ale diky plotsh to asi nejde
 
 for cond = 1:size(erspmean,3)
     subplot(3,3,(cond-1)*3+1); %vlevo tri obrazky - cas x frekvence - pro kontrolu
@@ -84,11 +84,29 @@ end %function
 
 function pp = anovafdr(erspmean)
     %anova pres podminky pro kazdy bod v case s fdr korekci
+    %  erspmean - time x subjects x conditions - prumery pro pasmo 
     pp = zeros(size(erspmean,1),1); %p hodnoty z anovy
-    for t = 1:size(erspmean,1)
-        pp(t) = anova1(squeeze(erspmean(t,:,:)),[],'off'); %anova pro kazdy bod v case
+    if size(erspmean,3) == 2        
+        for t = 1:size(erspmean,1) %pro kazdy bod v case
+            data = squeeze(erspmean(t,:,:)); %data subjects x conditions
+            [~,pp(t)] = ttest(data(:,1), data(:,2)); %paired t-test pro kazdy bod v case
+        end
+    elseif size(erspmean,3) == 3        
+        for t = 1:size(erspmean,1) %pro kazdy bod v case
+            subjects = repmat({'subject'}, size(erspmean,2),1);
+            data = squeeze(erspmean(t,:,:)); %data subjects x conditions
+            %dale viz navod https://nl.mathworks.com/help/stats/repeatedmeasuresmodel.ranova.html
+            T = table(subjects,data(:,1),data(:,2),data(:,3), 'VariableNames',{'subjects','c1','c2','c3'}); %tabulka dat pro ranova
+            C = table([1 2 3]','VariableNames',{'Conditions'});
+            rm = fitrm(T,'c1-c3 ~ 1','WithinDesign',C); %~1 misto ~subjects jsem nasel na internetu, kvuli chybe, funguje to
+            ranovatbl = ranova(rm); %repeated measures anova pro kazdy bod v case, vrati table
+            pp(t) = table2array(ranovatbl(1,'pValue'));  %overoval jsem p vysledky se STATISTICA a sedi to
+            %pp(t) = anova1(squeeze(erspmean(t,:,:)),[],'off'); %one-way anova pro kazdy bod v case
+        end
+    else
+        error('max 3 podminky');
     end
-    [~, ~, adj_p]=fdr_bh(pp,0.05,'pdep','no'); %dep je striktnejsi nez pdep
+    [~, ~, adj_p]=fdr_bh(pp,0.05,'dep','no'); %dep je striktnejsi nez pdep
     %[h, crit_p, adj_p]=fdr_bh(pvals,q,method,report);
     pp = adj_p; %prepisu puvodni hodnoty korigovanymi podle FDR
 end
