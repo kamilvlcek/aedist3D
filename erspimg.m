@@ -1,6 +1,6 @@
 %promenne nastaveni, ktere ale muzu nastavit i drive
-if ~exist('ERPTODO','var'), ERPTODO = 0; end %jestli ERP nebo ERSP
-if ~exist('EMFTODO','var'), EMFTODO = 1; end %jestli jpg nebo EMf obrazky
+if ~exist('ERPTODO','var'), ERPTODO = 1; end %jestli ERP nebo ERSP
+if ~exist('EMFTODO','var'), EMFTODO = 0; end %jestli jpg nebo EMf obrazky
 
 %nacti studii
 %[ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
@@ -28,6 +28,7 @@ for cond = 1:numel(conditions)
         disp([' +++++  CHANNEL ' channels{ch}{1} ' +++++' ]);
         if ERPTODO
             [STUDY erpdata erptimes pgroup pcond pinter] = std_erpplot(STUDY,ALLEEG,'channels',channels{ch}); %#ok<NCOMMA> %ERP plot
+            %erpdata 3x1 cell, matrix 1536x21 time x subjects
         else
             [STUDY erspdata ersptimes erspfreqs pgroup pcond pinter] = std_erspplot(STUDY,ALLEEG,'channels',channels{ch}); %#ok<NCOMMA> % ERSP plot
             %erspdata - 3x1 cell, matrix 83x106x1x21  freq x time x ch x subjects
@@ -55,6 +56,8 @@ for cond = 1:numel(conditions)
         
         if ~ERPTODO %jen pro ersp
             erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions{cond},channelname,EMFTODO); 
+        else
+            erpimgT(erpdata,erptimes,STUDY,conditions{cond},channelname,EMFTODO);
         end
     end
 
