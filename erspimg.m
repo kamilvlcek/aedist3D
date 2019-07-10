@@ -1,5 +1,6 @@
-
-ERPTODO = 0;
+%promenne nastaveni, ktere ale muzu nastavit i drive
+if ~exist('ERPTODO','var'), ERPTODO = 0; end %jestli ERP nebo ERSP
+if ~exist('EMFTODO','var'), EMFTODO = 1; end %jestli jpg nebo EMf obrazky
 
 %nacti studii
 %[ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
@@ -43,14 +44,17 @@ for cond = 1:numel(conditions)
         if length(channelname)==2
            channelname = [ channelname(1) '0' channelname(2)]; %pridam nulu, aby byly serazene soubory podle cisla
         end
-        filename = [STUDY.filepath '\\figures_export\\' STUDY.name '_' fname '_' cell2str(conditions{cond},1) '_' channelname];
-        print(fig,filename,'-djpeg');
-        filename = [STUDY.filepath '\\figures_export_emf\\' STUDY.name '_' fname '_' cell2str(conditions{cond},1) '_' channelname];
-        print(fig,filename,'-dmeta');
+        if ~EMFTODO
+            filename = [STUDY.filepath '\\figures_export\\' STUDY.name '_' fname '_' cell2str(conditions{cond},1) '_' channelname];
+            print(fig,filename,'-djpeg');
+        else
+            filename = [STUDY.filepath '\\figures_export_emf\\' STUDY.name '_' fname '_' cell2str(conditions{cond},1) '_' channelname];
+            print(fig,filename,'-dmeta');
+        end
         close(fig); %zavre aktualni obrazek
         
         if ~ERPTODO %jen pro ersp
-            erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions{cond},channelname); 
+            erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions{cond},channelname,EMFTODO); 
         end
     end
 

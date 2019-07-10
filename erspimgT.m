@@ -1,4 +1,4 @@
-function erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions,channel)
+function erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions,channel,EMFTODO)
 
 %potrebuje erspdata a ersptimes a erspfreqs
 %erspdata - 3x1 cell, matrix 83x106x1x21  freq x time x ch x subjects
@@ -39,9 +39,12 @@ for ff = 1:size(freqs,1)
         colorkatk = [colorskat{1,cond+1} ; colorskat{2,cond+1}]; %dve barvy, na caru a stderr plochu kolem
         M = mean(erspmean(:,:,cond),2); %prumer pres subjekty 
         E = std(erspmean(:,:,cond),[],2)/sqrt(size(erspmean,2)); %std err of mean / std(subjects)/pocet(subjects)
-        %plot(ersptimes,M);    
-        plotband(ersptimes, M, E,colorkatk(2,:)); %nejlepsi, je pruhledny, ale nejde kopirovat do corelu - lepsi pro jpg obrazky       
-        %ciplot(M+E, M-E, ersptimes, colorkatk(2,:)); %funguje dobre pri kopii do corelu, ulozim handle na barevny pas
+        %plot(ersptimes,M);   
+        if ~EMFTODO
+            plotband(ersptimes, M, E,colorkatk(2,:)); %nejlepsi, je pruhledny, ale nejde kopirovat do corelu - lepsi pro jpg obrazky       
+        else
+            ciplot(M+E, M-E, ersptimes, colorkatk(2,:)); %funguje dobre pri kopii do corelu, ulozim handle na barevny pas
+        end
         hold on;
         plotsh(cond) = plot(ersptimes,M,'-','LineWidth',2,'Color',colorkatk(1,:));  %prumerna odpoved,  ulozim si handle na krivku      
     end    
@@ -74,10 +77,13 @@ for cond = 1:size(erspmean,3)
     colorbar;
 end 
 fprintf(' printing figures ... ');
-filename = [STUDY.filepath '\\figures_export\\' STUDY.name '_' 'Pasma' '_' cell2str(conditions,1) '_' channel signif];
-print(fh,filename,'-djpeg');
-filename = [STUDY.filepath '\\figures_export_emf\\' STUDY.name '_' 'Pasma' '_' cell2str(conditions,1) '_' channel signif];
-print(fh,filename,'-dmeta');
+if ~EMFTODO
+    filename = [STUDY.filepath '\\figures_export\\' STUDY.name '_' 'Pasma' '_' cell2str(conditions,1) '_' channel signif];
+    print(fh,filename,'-djpeg');
+else
+    filename = [STUDY.filepath '\\figures_export_emf\\' STUDY.name '_' 'Pasma' '_' cell2str(conditions,1) '_' channel signif];
+    print(fh,filename,'-dmeta');
+end
 close(fh); %zavre aktualni obrazek
 fprintf(' OK\n');
 end %function 
