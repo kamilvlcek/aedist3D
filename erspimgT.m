@@ -1,15 +1,16 @@
-function erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions,channel,EMFTODO)
+function [pmin] = erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions,channel,EMFTODO,freqs)
 
 %potrebuje erspdata a ersptimes a erspfreqs
 %erspdata - 3x1 cell, matrix 83x106x1x21  freq x time x ch x subjects
 
-freqs = {'alfa',[8 13],2; 'beta', [14 30],3; 'theta', [4 7.5],5; 'lowgamma', [31 50],8;'highgamma',[51 100],9}; % nazvy a pasma frekvenci, + cislo subplotu        
+%freqs = {'alfa',[8 13],2; 'beta', [14 30],3; 'theta', [4 7.5],5; 'lowgamma', [31 50],8;'highgamma',[51 100],9}; % nazvy a pasma frekvenci, + cislo subplotu        
 fh = figure('Name','Pasma grafy','units','normalized','outerposition',[0 0 1 1]); %maximalizovany obrazek na cely monitor
 %set(fh, 'Position',  [1 1 1200 600]); % velikost obrazku je z nejakeho duvodu relativni vzhledem k monitoru
 hue = 0.8;
 colorskat = {[0 0 0],[0 1 0],[1 0 0],[0 0 1]; [hue hue hue],[hue 1 hue],[1 hue hue],[hue hue 1]}; % prvni radka - prumery, druha radka errorbars = svetlejsi
 fprintf('Pasma ');  
 signif = '';
+pmin = ones(1,size(freqs,1)); %tam budu davat minimalni hodnoty p
 
 for ff = 1:size(freqs,1)
     fprintf('%s ... ',freqs{ff,1});
@@ -31,6 +32,7 @@ for ff = 1:size(freqs,1)
     pp = anovafdr(erspmean); %anova s fdr korekci
     if(min(pp)<0.05), signif = '+'; end
     isignif = pp<0.05;
+    pmin(ff) = min(pp);
     
     subplot(3,3,freqs{ff,3}); %vpravo obrazek pro vsechny podminky - prumery za pasma
     yyaxis left

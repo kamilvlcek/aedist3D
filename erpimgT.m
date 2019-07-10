@@ -1,4 +1,4 @@
-function []  = erpimgT( erpdata,erptimes,STUDY,conditions,channel,EMFTODO )
+function [pmin]  = erpimgT( erpdata,erptimes,STUDY,conditions,channel,EMFTODO )
 %ERPIMGT udelat graf jednoho kanalu a spocita statistiku
 %   Detailed explanation goes here
 fprintf('ERP ...');  
@@ -12,6 +12,7 @@ end
 pp = anovafdr(erpall); %anova s fdr korekci
 if(min(pp)<0.05), signif = '+'; end
 isignif = pp<0.05;
+pmin = min(pp); %minimalni hodnota p, bylo tam neco signifikantniho?
 
 %vykreslim obrazek s carou statistiky
 fh = figure('Name','ERP graf','units','normalized','outerposition',[0 0 1 1]); %maximalizovany obrazek na cely monitor
@@ -44,10 +45,10 @@ yticks(0:0.1:1)
 legend(plotsh,conditions,'Location','best'); %nazvy podminek - jen pro posledni graf. Chtel jsem dat do prazneho subplotu, ale diky plotsh to asi nejde
 fprintf(' printing figure ... ');
 if ~EMFTODO
-    filename = [STUDY.filepath '\\figures_export\\' STUDY.name '_' 'ERP' '_' cell2str(conditions,1) '_' channel signif];
+    filename = [STUDY.filepath '\\figures_export\\' STUDY.name '_' 'ERPstat' '_' cell2str(conditions,1) '_' channel signif];
     print(fh,filename,'-djpeg');
 else
-    filename = [STUDY.filepath '\\figures_export_emf\\' STUDY.name '_' 'ERP' '_' cell2str(conditions,1) '_' channel signif];
+    filename = [STUDY.filepath '\\figures_export_emf\\' STUDY.name '_' 'ERPstat' '_' cell2str(conditions,1) '_' channel signif];
     print(fh,filename,'-dmeta');
 end
 close(fh); %zavre aktualni obrazek

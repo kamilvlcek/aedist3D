@@ -16,6 +16,14 @@ STUDY = pop_erpparams(STUDY, 'plotconditions','together','topotime',[]); %parame
 channels = {STUDY.changrp.channels};
 conditions = {{'2D','3D'}, {'allo' 'ego' 'control'}, {'allo' 'ego'}, {'allo' 'control'},{'ego' 'control'}};
 set(groot, 'DefaultFigureVisible', 'off') %vsechny vytvorene obrazku budou neviditelne - ale nefunguje
+if ERPTODO
+    freqs = {'ERP',0,0};     
+else    
+    freqs = {'alfa',[8 13],2; 'beta', [14 30],3; 'theta', [4 7.5],5; 'lowgamma', [31 50],8;'highgamma',[51 100],9}; % nazvy a pasma frekvenci, + cislo subplotu      
+end
+statresults = cell(numel(channels)+1,2+size(freqs,1)); %tam budu ukladat vysledky statistiky
+statresults(1,:) = [{'conditions','channel'},freqs(:,1)'];
+xlsfilename = [STUDY.filepath '\\figures_export\\' STUDY.name '_' fname '.xls'];
 
 for cond = 1:numel(conditions)  
     disp([' *********** CONDITION ' cell2str(conditions{1}) ' **********' ]);              
@@ -55,12 +63,14 @@ for cond = 1:numel(conditions)
         close(fig); %zavre aktualni obrazek
         
         if ~ERPTODO %jen pro ersp
-            erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions{cond},channelname,EMFTODO); 
+            pmin = erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions{cond},channelname,EMFTODO,freqs); 
+            statresults(ch+1,:) = [{cell2str(conditions{cond}),channelname},num2cell(pmin)];
         else
-            erpimgT(erpdata,erptimes,STUDY,conditions{cond},channelname,EMFTODO);
+            pmin = erpimgT(erpdata,erptimes,STUDY,conditions{cond},channelname,EMFTODO);
+            statresults(ch+1,:) = {cell2str(conditions{cond}),channelname,pmin};
         end
-    end
-
+    end    
+    xlswrite(xlsfilename, statresults); %zapisu do xls tabulky 
 end
 set(groot, 'DefaultFigureVisible', 'on');
 disp('Hotovo');
