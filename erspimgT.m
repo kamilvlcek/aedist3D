@@ -7,7 +7,8 @@ function [pmin] = erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions,channel
 fh = figure('Name','Pasma grafy','units','normalized','outerposition',[0 0 1 1]); %maximalizovany obrazek na cely monitor
 %set(fh, 'Position',  [1 1 1200 600]); % velikost obrazku je z nejakeho duvodu relativni vzhledem k monitoru
 hue = 0.8;
-colorskat = {[0 0 0],[0 1 0],[1 0 0],[0 0 1]; [hue hue hue],[hue 1 hue],[1 hue hue],[hue hue 1]}; % prvni radka - prumery, druha radka errorbars = svetlejsi
+colorskat = {[0 0 0],[1 0 0],[0 1 0],[0 0 1]; [hue hue hue],[1 hue hue],[hue 1 hue],[hue hue 1]}; % prvni radka - prumery, druha radka errorbars = svetlejsi
+colorMap = containers.Map({'control','ego','allo','2D','3D'},[4 3 2 3 2]); %prirazeni barev k podminkam
 fprintf('Pasma ');  
 signif = '';
 pmin = ones(1,size(freqs,1)); %tam budu davat minimalni hodnoty p
@@ -38,7 +39,8 @@ for ff = 1:size(freqs,1)
     yyaxis left
     plotsh = zeros(1,size(erspmean,3)); %handle na ploty, jen ty chci do legendy
     for cond = 1:size(erspmean,3) %cyklus pro jednotlive podminky - conditions
-        colorkatk = [colorskat{1,cond+1} ; colorskat{2,cond+1}]; %dve barvy, na caru a stderr plochu kolem
+        icolor = colorMap(conditions{cond}); %index barvy v colorkat, podle condition
+        colorkatk = [colorskat{1,icolor} ; colorskat{2,icolor}]; %dve barvy, na caru a stderr plochu kolem
         M = mean(erspmean(:,:,cond),2); %prumer pres subjekty 
         E = std(erspmean(:,:,cond),[],2)/sqrt(size(erspmean,2)); %std err of mean / std(subjects)/pocet(subjects)
         %plot(ersptimes,M);   

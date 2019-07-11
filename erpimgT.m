@@ -17,11 +17,14 @@ pmin = min(pp); %minimalni hodnota p, bylo tam neco signifikantniho?
 %vykreslim obrazek s carou statistiky
 fh = figure('Name','ERP graf','units','normalized','outerposition',[0 0 1 1]); %maximalizovany obrazek na cely monitor
 hue = 0.8;
-colorskat = {[0 0 0],[0 1 0],[1 0 0],[0 0 1]; [hue hue hue],[hue 1 hue],[1 hue hue],[hue hue 1]}; % prvni radka - prumery, druha radka errorbars = svetlejsi
+colorskat = {[0 0 0],[1 0 0],[0 1 0],[0 0 1]; [hue hue hue],[1 hue hue],[hue 1 hue],[hue hue 1]}; % prvni radka - prumery, druha radka errorbars = svetlejsi
+colorMap = containers.Map({'control','ego','allo','2D','3D'},[4 3 2 3 2]); %prirazeni barev k podminkam
+
 yyaxis left
 plotsh = zeros(1,size(erpall,3)); %handle na ploty, jen ty chci do legendy
 for cond = 1:size(erpall,3) %cyklus pro jednotlive podminky - conditions
-    colorkatk = [colorskat{1,cond+1} ; colorskat{2,cond+1}]; %dve barvy, na caru a stderr plochu kolem
+    icolor = colorMap(conditions{cond}); %index barvy v colorkat, podle condition
+    colorkatk = [colorskat{1,icolor} ; colorskat{2,icolor}]; %dve barvy, na caru a stderr plochu kolem   
     M = mean(erpall(:,:,cond),2); %prumer pres subjekty 
     E = std(erpall(:,:,cond),[],2)/sqrt(size(erpall,2)); %std err of mean / std(subjects)/pocet(subjects)
     %plot(ersptimes,M);   

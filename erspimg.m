@@ -3,10 +3,16 @@ if ~exist('ERPTODO','var'), ERPTODO = 1; end %jestli ERP nebo ERSP
 if ~exist('EMFTODO','var'), EMFTODO = 0; end %jestli jpg nebo EMf obrazky
 
 %nacti studii
-%[ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
-%[STUDY ALLEEG] = pop_loadstudy('filename', 'AEdist SA.study', 'filepath', 'D:\eeg\CIIRK\JanaEEG');
-%[STUDY ALLEEG] = pop_loadstudy('filename', 'AEdist ERP.study', 'filepath', 'D:\eeg\CIIRK\JanaEEG');
-%CURRENTSTUDY = 1; EEG = ALLEEG; CURRENTSET = [1:length(EEG)];
+%Clear Study
+STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
+
+%load study
+if ERPTODO
+    [STUDY ALLEEG] = pop_loadstudy('filename', 'AEdist ERP.study', 'filepath', 'D:\eeg\CIIRK\JanaEEG\EEG');
+else
+    [STUDY ALLEEG] = pop_loadstudy('filename', 'AEdist SA.study', 'filepath', 'D:\eeg\CIIRK\JanaEEG\EEG');
+end
+CURRENTSTUDY = 1; EEG = ALLEEG; CURRENTSET = [1:length(EEG)];
 
 %STUDY = pop_statparams(STUDY, 'condstats','on','mode','fieldtrip','fieldtripmethod','montecarlo','fieldtripmcorrect','cluster');
 STUDY = pop_statparams(STUDY, 'mode','eeglab','mcorrect','fdr','alpha',0.05); %parametricka statistika s FDR korekci, exact p < 0.05
@@ -21,7 +27,8 @@ if ERPTODO
 else    
     freqs = {'alfa',[8 13],2; 'beta', [14 30],3; 'theta', [4 7.5],5; 'lowgamma', [31 50],8;'highgamma',[51 100],9}; % nazvy a pasma frekvenci, + cislo subplotu      
 end
-statresults = cell(numel(channels)+1,2+size(freqs,1)); %tam budu ukladat vysledky statistiky
+fname = iff(ERPTODO,'ERP','ERSP');
+statresults = cell(1+numel(channels)*numel(conditions),2+size(freqs,1)); %tam budu ukladat vysledky statistiky
 statresults(1,:) = [{'conditions','channel'},freqs(:,1)'];
 xlsfilename = [STUDY.filepath '\\figures_export\\' STUDY.name '_' fname '.xls'];
 
@@ -48,7 +55,6 @@ for cond = 1:numel(conditions)
 
         %zvetsim a ulozim aktualni obrazek
         set(fig, 'Position',  [1 1 1000 500]); % velikost obrazku je z nejakeho duvodu relativni vzhledem k monitoru
-        fname = iff(ERPTODO,'ERP','ERSP');
         channelname = channels{ch}{1};
         if length(channelname)==2
            channelname = [ channelname(1) '0' channelname(2)]; %pridam nulu, aby byly serazene soubory podle cisla
@@ -61,13 +67,13 @@ for cond = 1:numel(conditions)
             print(fig,filename,'-dmeta');
         end
         close(fig); %zavre aktualni obrazek
-        
+        istat = (cond-1)*numel(channels)+ch+1;
         if ~ERPTODO %jen pro ersp
             pmin = erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions{cond},channelname,EMFTODO,freqs); 
-            statresults(ch+1,:) = [{cell2str(conditions{cond}),channelname},num2cell(pmin)];
+            statresults(istat,:) = [{cell2str(conditions{cond}),channelname},num2cell(pmin)];
         else
             pmin = erpimgT(erpdata,erptimes,STUDY,conditions{cond},channelname,EMFTODO);
-            statresults(ch+1,:) = {cell2str(conditions{cond}),channelname,pmin};
+            statresults(istat,:) = {cell2str(conditions{cond}),channelname,pmin};
         end
     end    
     xlswrite(xlsfilename, statresults); %zapisu do xls tabulky 
