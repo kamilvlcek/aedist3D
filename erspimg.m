@@ -5,12 +5,15 @@ if ~exist('EMFTODO','var'), EMFTODO = 0; end %jestli jpg nebo EMf obrazky
 %nacti studii
 %Clear Study
 STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];
+pop_editoptions( 'option_storedisk', 1, 'option_savetwofiles', 1, 'option_saveversion6', 1, 'option_single', 1, ...
+    'option_memmapdata', 0, 'option_eegobject', 0, 'option_computeica', 1, 'option_scaleicarms', 1, ...
+    'option_rememberfolder', 1, 'option_donotusetoolboxes', 0, 'option_checkversion', 1, 'option_chat', 0); % nacist vsechno do pameti
 
 %load study
 if ERPTODO
-    [STUDY ALLEEG] = pop_loadstudy('filename', 'AEdist ERP.study', 'filepath', 'D:\eeg\CIIRK\JanaEEG\EEG');
+    [STUDY ALLEEG] = pop_loadstudy('filename', 'ERP_study_NEW!.study', 'filepath', 'D:\eeg\CIIRK\JanaEEG\EEGnove');
 else
-    [STUDY ALLEEG] = pop_loadstudy('filename', 'AEdist SA.study', 'filepath', 'D:\eeg\CIIRK\JanaEEG\EEG');
+    [STUDY ALLEEG] = pop_loadstudy('filename', 'SA_study_NEW!.study', 'filepath', 'D:\eeg\CIIRK\JanaEEG\EEGnove');
 end
 CURRENTSTUDY = 1; EEG = ALLEEG; CURRENTSET = [1:length(EEG)];
 
@@ -40,7 +43,10 @@ for cond = 1:numel(conditions)
     [STUDY EEG] = pop_savestudy( STUDY, ALLEEG, 'savemode','resave'); %#ok<NCOMMA>
 
     for ch = 1:numel(channels)   
-        disp([' +++++  CHANNEL ' channels{ch}{1} ' +++++' ]);
+       disp([' +++++  CHANNEL ' channels{ch}{1} ' +++++' ]);
+       channelname = channels{ch}{1};
+       istat = (cond-1)*numel(channels)+ch+1;
+       try 
         if ERPTODO
             [STUDY erpdata erptimes pgroup pcond pinter] = std_erpplot(STUDY,ALLEEG,'channels',channels{ch}); %#ok<NCOMMA> %ERP plot
             %erpdata 3x1 cell, matrix 1536x21 time x subjects
@@ -48,14 +54,15 @@ for cond = 1:numel(conditions)
             [STUDY erspdata ersptimes erspfreqs pgroup pcond pinter] = std_erspplot(STUDY,ALLEEG,'channels',channels{ch}); %#ok<NCOMMA> % ERSP plot
             %erspdata - 3x1 cell, matrix 83x106x1x21  freq x time x ch x subjects
                                         
-        end              
+        end  
+        
         
         fig = gcf; %ziskam handle na aktualni obrazek
         set(fig, 'Visible', 'off'); %hned ho schovam
 
         %zvetsim a ulozim aktualni obrazek
         set(fig, 'Position',  [1 1 1000 500]); % velikost obrazku je z nejakeho duvodu relativni vzhledem k monitoru
-        channelname = channels{ch}{1};
+        
         if length(channelname)==2
            channelname = [ channelname(1) '0' channelname(2)]; %pridam nulu, aby byly serazene soubory podle cisla
         end
@@ -67,7 +74,7 @@ for cond = 1:numel(conditions)
             print(fig,filename,'-dmeta');
         end
         close(fig); %zavre aktualni obrazek
-        istat = (cond-1)*numel(channels)+ch+1;
+        
         if ~ERPTODO %jen pro ersp
             pmin = erspimgT(erspdata,ersptimes,erspfreqs,STUDY,conditions{cond},channelname,EMFTODO,freqs); 
             statresults(istat,:) = [{cell2str(conditions{cond}),channelname},num2cell(pmin)];
@@ -75,6 +82,11 @@ for cond = 1:numel(conditions)
             pmin = erpimgT(erpdata,erptimes,STUDY,conditions{cond},channelname,EMFTODO);
             statresults(istat,:) = {cell2str(conditions{cond}),channelname,pmin};
         end
+      catch exception 
+             errorMessage = exceptionLog(exception);
+             disp(errorMessage);     %zobrazim hlasku, zaloguju, ale snad to bude pokracovat dal                                          
+             statresults(istat,1:3) = {cell2str(conditions{cond}),channelname,'error'};
+      end
     end    
     xlswrite(xlsfilename, statresults); %zapisu do xls tabulky 
 end
