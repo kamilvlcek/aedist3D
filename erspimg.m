@@ -28,7 +28,7 @@ set(groot, 'DefaultFigureVisible', 'off') %vsechny vytvorene obrazku budou nevid
 if ERPTODO
     freqs = {'ERP',0,0};     
 else    
-    freqs = {'alfa',[8 13],2; 'beta', [14 30],3; 'theta', [4 7.5],5; 'lowgamma', [31 50],8;'highgamma',[51 100],9}; % nazvy a pasma frekvenci, + cislo subplotu      
+    freqs = {'alfa',[8 13],2; 'beta', [14 30],3; 'theta', [4 7.5],5; 'lowgamma', [31 50],8;'highgamma',[51 100],9; 'delta',[1 3.5],6}; % nazvy a pasma frekvenci, + cislo subplotu      
 end
 fname = iff(ERPTODO,'ERP','ERSP');
 statresults = cell(1+numel(channels)*numel(conditions),2+size(freqs,1)); %tam budu ukladat vysledky statistiky
