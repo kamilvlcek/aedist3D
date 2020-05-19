@@ -1,4 +1,5 @@
-%skript mi vykresli z aktualnich EEGlab datasetu ITI a RT pro vsechny trialy
+%EVENTSEEGLAB - script to plot ITI and RT for all trials from the actual EEG lab dataset 
+
 % 1.2.2018
 i10 =[EEG.event.type]==10 | [EEG.event.type]==11 | [EEG.event.type]==20 | [EEG.event.type]==21 | [EEG.event.type]==30 | [EEG.event.type]==31  ; %indexy podnetu
 %{

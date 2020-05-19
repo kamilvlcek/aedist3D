@@ -1,5 +1,5 @@
 function [ spolecne,Unikatni,spravne ] = prekryv( csvfile )
-%PREKRYV Summary of this function goes here
+%PREKRYV function to check the conditions in the Aedist3D csv setup file
 %   Detailed explanation goes here
 
 Poradi = import2D3Dporadi(csvfile);

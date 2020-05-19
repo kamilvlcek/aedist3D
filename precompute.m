@@ -1,4 +1,4 @@
-%nacti studii
+%PRECOMPUTE precompute ERSP for the study
 %Clear Study
 ERPTODO = 0;
 STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[];

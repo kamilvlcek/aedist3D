@@ -1,4 +1,6 @@
 function [blokyallozac,iAllo,i3D] = zacatkyBloku(Poradi,podle)
+    %called from aedistCSV and prekryv
+    
     if ~exist('podle','var'), podle = 'znacka'; end
     iAllo = contains(Poradi.podle(:),podle); %indexy radku z Allo
     i3D = Poradi.d2D3D(:) == 3; %indexy radku z Allo

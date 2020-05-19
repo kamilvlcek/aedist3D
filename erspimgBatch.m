@@ -1,4 +1,5 @@
-%pokud nebezi eeglab, nastartuju ho
+%can call erspimg script repeatedly with different setup
+%start eeglab if it is not running
 if ~exist('EEG','var') || isempty(EEG)
     clear
     eeglab

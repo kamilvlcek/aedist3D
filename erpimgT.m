@@ -1,6 +1,6 @@
 function [pmin]  = erpimgT( erpdata,erptimes,STUDY,conditions,channel,EMFTODO )
-%ERPIMGT udelat graf jednoho kanalu a spocita statistiku
-%   Detailed explanation goes here
+%ERPIMGT makes figure of one channel and computes statistics
+%   called from erspimg script, which prepares all argumenents
 fprintf('ERP ...');  
 signif = '';
 
@@ -43,8 +43,6 @@ plot(erptimes(isignif),pp(isignif),'*r','MarkerSize',2); % zvyraznena signif
 ylim([0 1])
 yticks(0:0.1:1)
     
-
-
 legend(plotsh,conditions,'Location','best'); %nazvy podminek - jen pro posledni graf. Chtel jsem dat do prazneho subplotu, ale diky plotsh to asi nejde
 fprintf(' printing figure ... ');
 if ~EMFTODO
