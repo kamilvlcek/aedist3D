@@ -19,11 +19,18 @@ data(end-3:end, 4) = dataCell(end-3:end,7); % take last 4 names (of fiducials) i
 % 6 channels are not labeled: 4 EOG, and 2 on the head - CMS and DRL - special sensors of BIOSEMI for reference
 % 2 on the head -  CMS and DRL, have positive Z coordinate, so try to find them among non-labeled channels:
 ind_addiotinal_chan = find(cellfun(@isempty,data(:,4)) & cell2mat(data(:,3))>0);
-data{ind_addiotinal_chan(1), 4} = {'RCMS'};
-data{ind_addiotinal_chan(2), 4} = {'RDRL'};
+% in the EEG data we don't have them, so they should be deleted from the channel locations file
+data(ind_addiotinal_chan,:) = [];
 
-% find all other empty channels and labeled them as EOG
-data(find(cellfun(@isempty,data(:,4))), 4) = {'EOG'};
+% data{ind_addiotinal_chan(1), 4} = {'RCMS'};
+% data{ind_addiotinal_chan(2), 4} = {'RDRL'};
+
+% find all other empty channels and labeled them as EOG1, EOG2...
+% data(find(cellfun(@isempty,data(:,4))), 4) = {'EOG'};
+EOG_indexes = find(cellfun(@isempty,data(:,4)));
+for ind=1:length(EOG_indexes)
+    data{EOG_indexes(ind), 4} = {['EOG' num2str(ind)]};
+end
 
 %% sort data on label column simultaneously in alphabetical order and numbers in ascending order
 
@@ -52,6 +59,11 @@ combined = cellfun(@(l,n) [l num2str(n, '%03d')], letters, num2cell(numbers), 'U
 % sort data based on new indexes
 sorted_data = data(indexes,:);
 
+% rename fiducials to the standard names in eeglab
+sorted_data{end-3, 4} = {'LPA'}; % left pre-auricular point
+sorted_data{end-2, 4} = {'Nz'}; % nasion
+sorted_data{end-1, 4} = {'RPA'}; % right pre-auricular point
+sorted_data{end, 4} = {'inion'}; % inion 
 
 %% Create output variable
 subject = table;
