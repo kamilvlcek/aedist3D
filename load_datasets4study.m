@@ -1,6 +1,6 @@
 % Sofia March 2023
 % Obtain all .set files for creating a study
-% After loading all the .set files, use EEGLAB GUI 'Using all loaded dataset' to create a STUDY.
+% After loading all the .set files, use EEGLAB GUI 'Using all loaded datasets' to create a STUDY or script selection_IC_in_STUDY.m
 
 disp('Please specify data directory with pre-processed data')
 targetDir = uigetdir(path,'Select file directory.');
