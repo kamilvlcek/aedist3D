@@ -7,7 +7,9 @@
 
 % variables, which can be set earlier (in preprocessing_batch)
 if ~exist('individChanLoc','var'), individChanLoc = 0; end % to import standard biosemi channel locations file or individual digitized channel locations for each subject
-  
+if ~exist('rejectTrainingEpochs','var'), rejectTrainingEpochs = 0; end
+if ~exist('rejectBadEpochs','var'), rejectBadEpochs = 0; end
+
 Ns = 16; % number of subjects 
 
 disp('Please specify directory for preprocessed data (where folders are created).')
@@ -166,31 +168,36 @@ for s=1:length(files)
     EEG = eeg_checkset( EEG );
     [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG, CURRENTSET);
   
-    % remove training epochs
-    EEG = pop_select( EEG, 'notrial',[1:18] ); 
-    EEG.comments = pop_comments(EEG.comments,'','training trials removed',1);
-    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 8, 'setname',[subject_name '_epochs_without_training'],'savenew',[new_path '_epochs_without_training.set'],'gui','off');
-    EEG = eeg_checkset( EEG );
+    if rejectTrainingEpochs == 1
+        % remove training epochs
+        EEG = pop_select( EEG, 'notrial',[1:18] );
+        EEG.comments = pop_comments(EEG.comments,'','training trials removed',1);
+        [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 8, 'setname',[subject_name '_epochs_without_training'],'savenew',[new_path '_epochs_without_training.set'],'gui','off');
+        EEG = eeg_checkset( EEG );
+    end
 
-    % remove bad epochs
-    events1 = [EEG.event(:).urevent]; % all events in epochs before rejection
-    chan_EEG_ind = find(strcmp({EEG.chanlocs.type}, 'EEG')); % find only EEG channels without EOG
-    [EEG, Indexes] = pop_eegthresh(EEG,1,chan_EEG_ind,-500,500,-1,1.998,1,1); % an amplitude threshold of -500 to 500 uV
-    [EEG, ~, ~, nrej] = pop_jointprob(EEG,1,chan_EEG_ind ,6,2,1,1,0,[],0); % 6SD (standard-dev) as the criteria for the improbability test for single channels, and 2SD as the criteria for all channels
-    events2 = [EEG.event(:).urevent]; % events in epochs remaining after rejection
-    EEG.comments = pop_comments(EEG.comments,'',...
-    strcat(num2str(nrej+length(Indexes)), " epochs rejected, ",  "Rejected epochs ", strjoin(string(find(~ismember(events1,events2))),', ')),1);
-
-    [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 9, 'setname',[subject_name '_bad_epochs_rejected'],'savenew',[new_path '_bad_epochs_rejected.set'],'gui','off');
-    EEG = eeg_checkset( EEG );
-    % save the number of rejected epochs to the output table
-    output{s,5} = nrej+length(Indexes);
-    output{s,6} = char(strjoin(string(find(~ismember(events1,events2))),', '));
+    if rejectBadEpochs == 1
+        % remove bad epochs
+        events1 = [EEG.event(:).urevent]; % all events in epochs before rejection
+        chan_EEG_ind = find(strcmp({EEG.chanlocs.type}, 'EEG')); % find only EEG channels without EOG
+        [EEG, Indexes] = pop_eegthresh(EEG,1,chan_EEG_ind,-500,500,-1,1.998,1,1); % an amplitude threshold of -500 to 500 uV
+        [EEG, ~, ~, nrej] = pop_jointprob(EEG,1,chan_EEG_ind ,6,2,1,1,0,[],0); % 6SD (standard-dev) as the criteria for the improbability test for single channels, and 2SD as the criteria for all channels
+        events2 = [EEG.event(:).urevent]; % events in epochs remaining after rejection
+        EEG.comments = pop_comments(EEG.comments,'',...
+            strcat(num2str(nrej+length(Indexes)), " epochs rejected, ",  "Rejected epochs ", strjoin(string(find(~ismember(events1,events2))),', ')),1);
+        
+        [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 9, 'setname',[subject_name '_bad_epochs_rejected'],'savenew',[new_path '_bad_epochs_rejected.set'],'gui','off');
+        EEG = eeg_checkset( EEG );
+        % save the number of rejected epochs to the output table
+        output{s,5} = nrej+length(Indexes);
+        output{s,6} = char(strjoin(string(find(~ismember(events1,events2))),', '));
+    end
         
     disp(['preprocessing for subject ' subject_name ' finished']);
     
     % then we need to delete all datasets from eeglab and start again for next subject
-    ALLEEG = pop_delset(ALLEEG, 1:9); % delete datasets   
+    %ALLEEG = pop_delset(ALLEEG, 1:9); 
+    STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[]; % delete datasets   
 end
 
 eeglab redraw  % Update the main EEGLAB window
