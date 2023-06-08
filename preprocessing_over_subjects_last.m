@@ -7,10 +7,10 @@
 
 % variables, which can be set earlier (in preprocessing_batch)
 if ~exist('individChanLoc','var'), individChanLoc = 0; end % to import standard biosemi channel locations file or individual digitized channel locations for each subject
-if ~exist('rejectTrainingEpochs','var'), rejectTrainingEpochs = 0; end
 if ~exist('rejectBadEpochs','var'), rejectBadEpochs = 0; end
+if ~exist('rejectWindowData','var'), rejectWindowData = 0; end
 
-Ns = 16; % number of subjects 
+Ns = 16; % number of subjects
 
 disp('Please specify directory for preprocessed data (where folders are created).')
 path_data = uigetdir(path,'Select file directory.');
@@ -23,8 +23,8 @@ cd(path_data)
 eeglab; % Start eeglab
 
 % initialize cell array to export info about all channels and trials rejected for each subject
-output = cell(length(files), 6);
-colNames = {'subject', 'n_chan_rj', 'chan_name_rj', 'n_time_pnts_rj_by_clean_rawdata', 'n_bad_epochs_rj', 'idx_events_rj'};
+output = cell(length(files), 8);
+colNames = {'subject', 'N_chan_rj', 'chan_name_rj', 'N_sec_rj_by_clean_rawdata', 'N_events_rj_by_clean_rawdata', 'idx_events_rj_by_clean_rawdata', 'N_bad_epochs_rj', 'idx_events_rj'};
 
 % For each subject
 for s=1:length(files)
@@ -35,8 +35,6 @@ for s=1:length(files)
     eval(['!mkdir ' subject_name]); % create a new folder for each subject
     new_path = [path_data '\' subject_name '\' subject_name];
     
-    [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
-    
     output{s,1} = subject_name; % save subject name to the output table
     
     % read a bdf file
@@ -45,10 +43,10 @@ for s=1:length(files)
     EEG = eeg_checkset( EEG );
     
     % resample to 256 hz
-    EEG = pop_resample( EEG, 256); 
+    EEG = pop_resample( EEG, 256);
     [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 1,'savenew',[new_path '_resampled.set'],'gui','off');
     EEG = eeg_checkset( EEG );
-
+    
     % import channel locations
     if individChanLoc == 0
         EEG = pop_chanedit(EEG, 'load',{'E:\\CIIRK\\new_data\\biosemi_132.ced','filetype','autodetect'},'changefield',{129 'type' 'EOG'},'changefield',{130 'type' 'EOG'},'changefield',{131 'type' 'EOG'},'changefield',{132 'type' 'EOG'});
@@ -66,18 +64,18 @@ for s=1:length(files)
     
     % filtering
     EEG = pop_eegfiltnew(EEG, 1, 0, 1650, 0, [], 0); % High-pass filter the data at 1-Hz. Note that EEGLAB uses pass-band edge, therefore 1/2 = 0.5 Hz
-    %EEG = pop_eegfiltnew(EEG, 'hicutoff',120); % low pass filter 120 hz 
+    %EEG = pop_eegfiltnew(EEG, 'hicutoff',120); % low pass filter 120 hz
     [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 2,'setname',[subject_name '_filtered'],'savenew',[new_path '_filtered.set'],'gui','off');
-	
+    
     % remove line noise at 50 and 100 Hz using plugin cleanline
-    EEG = pop_cleanline(EEG, 'bandwidth',2,'chanlist',[1:132] ,'computepower',1,'linefreqs',[50 100] ,'newversion',0,'normSpectrum',0,'p',0.01,'pad',2,'plotfigures',0,'scanforlines',0,'sigtype','Channels','taperbandwidth',2,'tau',100,'verb',1,'winsize',4,'winstep',1); 
+    EEG = pop_cleanline(EEG, 'bandwidth',2,'chanlist',[1:132] ,'computepower',1,'linefreqs',[50 100] ,'newversion',0,'normSpectrum',0,'p',0.01,'pad',2,'plotfigures',0,'scanforlines',0,'sigtype','Channels','taperbandwidth',2,'tau',100,'verb',1,'winsize',4,'winstep',1);
     [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 3, 'setname',[subject_name '_filtered_linenoise'],'savenew',[new_path '_filtered_linenoise.set'],'gui','off');
     EEG = eeg_checkset( EEG );
- 
+    
     % reject bad channels using clean_rawdata plugin
     originalEEG = EEG;
-    EEG = pop_clean_rawdata(EEG, 'FlatlineCriterion',5,'ChannelCriterion',0.8,'LineNoiseCriterion',4,'Highpass','off','BurstCriterion','off','WindowCriterion','off','BurstRejection','off','Distance','Euclidian'); 
-    removedChansIdx = ~ismember({originalEEG.chanlocs(:).labels},{EEG.chanlocs(:).labels}); % indexes of removed chan 
+    EEG = clean_artifacts(EEG, 'FlatlineCriterion',5,'ChannelCriterion',0.8,'LineNoiseCriterion',4,'Highpass','off','BurstCriterion','off','WindowCriterion','off','BurstRejection','off','Distance','Euclidian');
+    removedChansIdx = ~ismember({originalEEG.chanlocs(:).labels},{EEG.chanlocs(:).labels}); % indexes of removed chan
     if ~isempty(find(removedChansIdx))
         removedChans = strjoin({originalEEG.chanlocs(removedChansIdx).labels},', ');
         EEG.comments = pop_comments(EEG.comments,'',['Removed channels ', removedChans, '_by clean_rawdata plugin']);
@@ -85,43 +83,32 @@ for s=1:length(files)
     [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 4,'setname',[subject_name '_bad_channels_rj'],'savenew',[new_path '_bad_channels_rj.set'],'gui','off');
     EEG = eeg_checkset( EEG );
     
-    % save rejected channels to the output table 
+    % save rejected channels to the output table
     output{s,2} = length(find(removedChansIdx)); % the number
     output{s,3} = removedChans; % their names
-
+    
     % then correct bad portions of data using clean_rawdata plugin (clean_artifacts is the same), uses ASR algorhitm
     originalEEG2 = EEG;
-    EEG = clean_artifacts(EEG, 'ChannelCriterion','off','LineNoiseCriterion', 'off','FlatlineCriterion', 'off', 'Highpass','off','BurstCriterion', 10,'WindowCriterion', 0.25); % BurstCriterion - SD=10, can be changed
-    vis_artifacts(EEG,originalEEG2) % to compare visually cleaned and raw eeg - only in case of one subject, for all - not relevant
-
+    eventsOrig = [EEG.event(:).urevent]; % all events in data before artifacts rejection
+    if rejectWindowData == 1
+        EEG = clean_artifacts(EEG, 'ChannelCriterion','off','LineNoiseCriterion', 'off','FlatlineCriterion', 'off', 'Highpass','off','BurstCriterion', 10,'WindowCriterion', 0.25); % BurstCriterion - SD=10, can be changed
+    else
+        EEG = clean_artifacts(EEG, 'ChannelCriterion','off','LineNoiseCriterion', 'off','FlatlineCriterion', 'off', 'Highpass','off','BurstCriterion', 10,'WindowCriterion', 'off');
+    end
+    %vis_artifacts(EEG,originalEEG2) % to compare visually cleaned and raw eeg - only in case of one subject, for all - not relevant
+    
     % check also whether the length of EEG data remained the same after cleaning
     if EEG.pnts == originalEEG2.pnts
         disp('the same number of data points in cleaned and original dataset');
         output{s,4} = 0;
     else
-        disp('inconsistency in the number of data points in cleaned and original dataset'); % if also some time windows of bad data were rejected, then we need to recover events
-        % Recover the lost events (only if WindowCriterion was used in clean_rawdata which removes bad portions of data)
-        % from Makoto's code https://sccn.ucsd.edu/wiki/Makoto%27s_useful_EEGLAB_code#How_to_recover_the_lost_events_by_window_rejection_by_clean_rawdata_.2805.2F22.2F2021_added.29
-        urEventType         = {EEG.urevent.type}';
-        urEventLatencyFrame = round([EEG.urevent.latency]);
-        cleanSampleMask     = EEG.etc.clean_sample_mask;
-        isEventPresent      = cleanSampleMask(urEventLatencyFrame);
-        boundaryIdx = find(contains({EEG.event.type}, 'boundary'));
-        if any(isEventPresent==false)
-            lostEventIdx = find(isEventPresent==0);
-            for lostEventIdxIdx = 1:length(lostEventIdx)
-                lostEventUrlatencyFrame = urEventLatencyFrame(lostEventIdx(lostEventIdxIdx));
-                lostEventCurrentPosition = sum(cleanSampleMask(1:lostEventUrlatencyFrame));
-                boundaryLatency = round([EEG.event(boundaryIdx).latency]);
-                [differenceInFrame, selectedBoundaryIdx] = min(abs(boundaryLatency-lostEventCurrentPosition));
-                if differenceInFrame > 3
-                    error('Fail to recover the lost event.')
-                end
-                EEG.event(selectedBoundaryIdx).type = urEventType{lostEventIdx(lostEventIdxIdx)};
-            end
-        end
-        % save the number of rejected timepoints to the output table
-        output{s,4} = length(find(~EEG.etc.clean_sample_mask));        
+        disp('inconsistency in the number of data points in cleaned and original dataset'); % if also some time windows of bad data were rejected
+        
+        % save the lenghth of rejected timepoints in sec to the output table
+        output{s,4} = length(find(~EEG.etc.clean_sample_mask))/EEG.srate;
+        eventsAfterRj = [EEG.event(:).urevent]; % events remaining after rejection
+        output{s,5} = length(eventsOrig) - length(eventsAfterRj); % save number of events rj by clean_rawdata
+        output{s,6} = char(strjoin(string(find(~ismember(eventsOrig, eventsAfterRj))),', ')); % and their indexes
     end
     
     % rename all conditions into words for convineince
@@ -145,10 +132,10 @@ for s=1:length(files)
     % save new cleaned set
     [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 5,'setname',[subject_name '_clean_ASR'],'savenew',[new_path '_clean_ASR.set'],'gui','off');
     EEG = eeg_checkset( EEG );
-
-  %  Interpolate all the removed channels
+    
+    %  Interpolate all the removed channels
     EEG = pop_interp(EEG, originalEEG.chanlocs, 'spherical');
-
+    
     % Re-reference the data to average
     EEG.nbchan = EEG.nbchan+1;
     EEG.data(end+1,:) = zeros(1, EEG.pnts);  % restore electrode A1 as it was initially used as reference
@@ -161,21 +148,13 @@ for s=1:length(files)
     EEG = pop_select( EEG,'nochannel',{'initialReference'});
     % save new  set
     [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 6,'setname',[subject_name '_clean_ASR_avg_ref'],'savenew',[new_path '_clean_ASR_avg_ref.set'],'gui','off');
-   
+    
     % extract epochs
     EEG = pop_epoch( EEG, {'control2D' 'control3D'  'ego2D' 'ego3D' 'allo2D' 'allo3D'}, [-1  2], 'newname', [subject_name '_epochs'], 'epochinfo', 'yes');
     [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 7, 'setname',[subject_name '_epochs'],'savenew',[new_path '_epochs.set'],'gui','off');
     EEG = eeg_checkset( EEG );
     [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG, CURRENTSET);
-  
-    if rejectTrainingEpochs == 1
-        % remove training epochs
-        EEG = pop_select( EEG, 'notrial',[1:18] );
-        EEG.comments = pop_comments(EEG.comments,'','training trials removed',1);
-        [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 8, 'setname',[subject_name '_epochs_without_training'],'savenew',[new_path '_epochs_without_training.set'],'gui','off');
-        EEG = eeg_checkset( EEG );
-    end
-
+    
     if rejectBadEpochs == 1
         % remove bad epochs
         events1 = [EEG.event(:).urevent]; % all events in epochs before rejection
@@ -189,20 +168,19 @@ for s=1:length(files)
         [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 9, 'setname',[subject_name '_bad_epochs_rejected'],'savenew',[new_path '_bad_epochs_rejected.set'],'gui','off');
         EEG = eeg_checkset( EEG );
         % save the number of rejected epochs to the output table
-        output{s,5} = nrej+length(Indexes);
-        output{s,6} = char(strjoin(string(find(~ismember(events1,events2))),', '));
+        output{s,7} = nrej+length(Indexes);
+        output{s,8} = char(strjoin(string(find(~ismember(events1,events2))),', '));
     end
-        
+    
     disp(['preprocessing for subject ' subject_name ' finished']);
     
     % then we need to delete all datasets from eeglab and start again for next subject
-    %ALLEEG = pop_delset(ALLEEG, 1:9); 
-    STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[]; % delete datasets   
+    STUDY = []; CURRENTSTUDY = 0; ALLEEG = []; EEG=[]; CURRENTSET=[]; % delete datasets
 end
 
 eeglab redraw  % Update the main EEGLAB window
 
 % export output table
-xlsfilename = fullfile(path_data, 'preprocessing_over_subjects_output.xls');   
-xlswrite(xlsfilename, vertcat(colNames,output)); 
+xlsfilename = fullfile(path_data, 'preprocessing_over_subjects_output.xls');
+xlswrite(xlsfilename, vertcat(colNames,output));
 disp([ 'XLS table saved: ' xlsfilename]);
