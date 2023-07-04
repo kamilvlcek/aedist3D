@@ -35,11 +35,13 @@ for s = 1:length(folderNames)
     
     % import a digitized chan loc file with renamed labels corresponding to standard_1005.elc labels(such as Cz, Pz...etc.)
     idxSubjectChalLoc = find(contains(chanLocFilesRenamed, subjectNameShort)); % find index of chan loc file for this subject
-    fullChanLocFilename = fullfile(chanLocPathRenamed,  chanLocFilesRenamed{idxSubjectChalLoc}); % full name with a path
-    EEG=pop_chanedit(EEG, 'load', {fullChanLocFilename,'filetype','xyz'}, ... % import only 132 channels without fiducials
-        'delete', [133:136], 'changefield',{129 'type' 'EOG'},'changefield',{130 'type' 'EOG'},'changefield',{131 'type' 'EOG'},'changefield',{132 'type' 'EOG'});
-    [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
-    EEG = eeg_checkset( EEG );
+    if ~isempty(idxSubjectChalLoc) % in some subjects, chan loc file is missing, then not to import new chan loc file and just use the old standard biosemi file
+        fullChanLocFilename = fullfile(chanLocPathRenamed,  chanLocFilesRenamed{idxSubjectChalLoc}); % full name with a path
+        EEG=pop_chanedit(EEG, 'load', {fullChanLocFilename,'filetype','xyz'}, ... % import only 132 channels without fiducials
+            'delete', [133:136], 'changefield',{129 'type' 'EOG'},'changefield',{130 'type' 'EOG'},'changefield',{131 'type' 'EOG'},'changefield',{132 'type' 'EOG'});
+        [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
+        EEG = eeg_checkset( EEG );
+    end
     
     % Estimate single equivalent current dipoles
     % all files used for the standard BEM head model
@@ -47,19 +49,23 @@ for s = 1:length(folderNames)
     mriFilePath = 'D:\\instalace\\eeglab2023.0\\plugins\\dipfit5.2\\standard_BEM\\standard_mri.mat';
     templateChannelFilePath = 'D:\\instalace\\eeglab2023.0\\plugins\\dipfit5.2\\standard_BEM\\elec\\standard_1005.elc';
     
-    % these coordinateTransform Parameters are only used with standard biosemi file:
-    %     coordinateTransformParameters = [0.52588 -8.4007 -1.9173 0.037341 -0.0068294 -1.5684 98.2903 93.4194 97.4829]; % these numbers were obtained when adjusted biosemi channels to the standard template of electrodes associated with the BEM model for one subject, but can be used for all subjects with biosemi channel loc file
+    if ~isempty(idxSubjectChalLoc)
+        % find coordinateTransformParameters for digitized chan loc file for this particular subject if it exists
+        [~,coordinateTransformParameters] = coregister(EEG.chanlocs, templateChannelFilePath, 'warp', 'auto', 'manual', 'off');
+    else
+        % if the subject's chan loc file is missing, these coordinateTransform Parameters are used with standard biosemi file:
+        coordinateTransformParameters = [0.52588 -8.4007 -1.9173 0.037341 -0.0068294 -1.5684 98.2903 93.4194 97.4829]; % these numbers were obtained when adjusted biosemi channels to the standard template of electrodes associated with the BEM model for one subject, but can be used for all subjects with biosemi channel loc file
+    end
     
-    % find coordinateTransformParameters for digitized chan loc file for this particular subject
-    [~,coordinateTransformParameters] = coregister(EEG.chanlocs, templateChannelFilePath, 'warp', 'auto', 'manual', 'off');
-    
-    % then import normal digitized chan loc file (with old labels like in EEG data - A1, A2...etc.)
+    % then import normal digitized chan loc file (with old labels like in EEG data - A1, A2...etc.) if exists
     idxSubjectChalLoc = find(contains(chanLocFilesNormal, subjectNameShort)); % find index of chan loc file for this subject
-    fullChanLocFilename = fullfile(chanLocPath,  chanLocFilesNormal{idxSubjectChalLoc}); % full name with a path
-    EEG=pop_chanedit(EEG, 'load', {fullChanLocFilename,'filetype','xyz'}, ... % import only 132 channels without fiducials
-        'delete', [133:136], 'changefield',{129 'type' 'EOG'},'changefield',{130 'type' 'EOG'},'changefield',{131 'type' 'EOG'},'changefield',{132 'type' 'EOG'});
-    [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
-    EEG = eeg_checkset( EEG );
+    if ~isempty(idxSubjectChalLoc)
+        fullChanLocFilename = fullfile(chanLocPath,  chanLocFilesNormal{idxSubjectChalLoc}); % full name with a path
+        EEG=pop_chanedit(EEG, 'load', {fullChanLocFilename,'filetype','xyz'}, ... % import only 132 channels without fiducials
+            'delete', [133:136], 'changefield',{129 'type' 'EOG'},'changefield',{130 'type' 'EOG'},'changefield',{131 'type' 'EOG'},'changefield',{132 'type' 'EOG'});
+        [ALLEEG EEG] = eeg_store(ALLEEG, EEG, CURRENTSET);
+        EEG = eeg_checkset( EEG );
+    end
     
     % Co-registration of head model and electrode locations
     chan2fit = 1:EEG.nbchan-4; % last 4 channels are EOG in all subjects, should be excluded from dipole fitting   
