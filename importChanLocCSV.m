@@ -76,6 +76,7 @@ subject.label = sorted_data(:, 4);
 
 % Save in txt file
 subjectName = regexp(filename,'\.', 'split');  % split filename to separate subject's name and extension
+% subjectName = regexp(filename,'.csv', 'split');
 subjectName = subjectName{1};
 writetable(subject,[subjectName '.txt'],  'Delimiter', ' ','WriteVariableNames', 0);
 end

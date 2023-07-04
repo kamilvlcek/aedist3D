@@ -15,7 +15,7 @@ colNames = {'subject', 'N_trials_orig', 'N_rj_training_trials', 'N_rj_incorrect'
 eeglab; % Start eeglab
 
 % For each of the subjects
-for s = 1:3%length(folderNames)
+for s = 1:length(folderNames)
     SubjectPath = [path_data '\' folderNames{s} '\'];
     file=dir([SubjectPath '*runica.set']); % dataset after preprocessing, epoching, and ICA decomposition
     EEG = pop_loadset('filename', file.name, 'filepath', SubjectPath);

@@ -5,7 +5,7 @@ files=dir('*.csv');   %  all csv files in this directory
 
 % For each subject
 for s=1:length(files)
-    chanLocFilename = files(s).name; % name of raw eeg file
+    chanLocFilename = files(s).name; % name of csv file obtained via Myrousz's code
     subject = importChanLocCSV(chanLocFilename);
     disp(['csv file for subject ' chanLocFilename ' succesfully converted to txt'])
 end

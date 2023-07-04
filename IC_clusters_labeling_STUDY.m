@@ -3,11 +3,11 @@
 %%% https://sccn.ucsd.edu/wiki/Makoto%27s_useful_EEGLAB_code#How_to_obtain_anatomical_labels_using_Fieldtrip_.2807.2F08.2F2022_added.29 
 
 % Set path to Fieldtrip's AAL library.
-addpath('D:\instalace\eeglab2023.0\plugins\Fieldtrip-lite20230503')
+addpath('D:\instalace\eeglab2023.0\plugins\Fieldtrip-lite20230606')
 ft_defaults
  
 % Obtain the Automated Anatomical Label (AAL) library (Tzourio-Mazoyer et al., 2002)
-aal = ft_read_atlas('D:\instalace\eeglab2023.0\plugins\Fieldtrip-lite20230503\template\atlas\aal\ROI_MNI_V4.nii');
+aal = ft_read_atlas('D:\instalace\eeglab2023.0\plugins\Fieldtrip-lite20230606\template\atlas\aal\ROI_MNI_V4.nii');
  
 % Obtain the current IC-dipole xyz for individual eeg dataset
 % currentXyz = EEG(1).dipfit.model(1).posxyz; % For the IC1.
@@ -73,7 +73,7 @@ for i = 1:num_rows
 end
 
 % Write the headers
-xlspath = 'E:\CIIRK\new_data\EEG_data\pre-processed data\';
+xlspath = 'E:\CIIRK\new_data\EEG_data\pre-processed_data\';
 xlsfilename = fullfile(xlspath,  'clusters_of_ICs_labeled.xls');
 
 headers = {'cluster_name', 'x_centroid', 'y_centroid', 'z_centroid', 'closest_ROI1'};
