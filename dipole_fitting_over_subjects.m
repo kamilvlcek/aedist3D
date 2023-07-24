@@ -27,14 +27,16 @@ for s = 1:length(folderNames)
     file=dir([SubjectPath '*runica_incorrect_rj.set']);
     subjectName = regexp(file.name,'\_', 'split'); % take only subject's name
     subjectName = subjectName{1};
-    subjectNameShort = regexp(subjectName, '\d', 'split'); % subject Name should contain only 2 letters e.g.: 'as' (to match then chan loc file)
-    subjectNameShort = subjectNameShort{1};
+   
+    if exist([SubjectPath subjectName '_dipfit_digChanLoc.set'], 'file') == 2 % if dipole fitting for this subject was already done, skip it and do the next subject
+        continue
+    end
     
     % Load dataset from one subject
     EEG = pop_loadset('filename', file.name, 'filepath', SubjectPath);
     
     % import a digitized chan loc file with renamed labels corresponding to standard_1005.elc labels(such as Cz, Pz...etc.)
-    idxSubjectChalLoc = find(contains(chanLocFilesRenamed, subjectNameShort)); % find index of chan loc file for this subject
+    idxSubjectChalLoc = find(contains(chanLocFilesRenamed, subjectName)); % find index of chan loc file for this subject
     if ~isempty(idxSubjectChalLoc) % in some subjects, chan loc file is missing, then not to import new chan loc file and just use the old standard biosemi file
         fullChanLocFilename = fullfile(chanLocPathRenamed,  chanLocFilesRenamed{idxSubjectChalLoc}); % full name with a path
         EEG=pop_chanedit(EEG, 'load', {fullChanLocFilename,'filetype','xyz'}, ... % import only 132 channels without fiducials
@@ -58,7 +60,7 @@ for s = 1:length(folderNames)
     end
     
     % then import normal digitized chan loc file (with old labels like in EEG data - A1, A2...etc.) if exists
-    idxSubjectChalLoc = find(contains(chanLocFilesNormal, subjectNameShort)); % find index of chan loc file for this subject
+    idxSubjectChalLoc = find(contains(chanLocFilesNormal, subjectName)); % find index of chan loc file for this subject
     if ~isempty(idxSubjectChalLoc)
         fullChanLocFilename = fullfile(chanLocPath,  chanLocFilesNormal{idxSubjectChalLoc}); % full name with a path
         EEG=pop_chanedit(EEG, 'load', {fullChanLocFilename,'filetype','xyz'}, ... % import only 132 channels without fiducials
